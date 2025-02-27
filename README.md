@@ -3,6 +3,72 @@
 ## Overview
 MAria2 is an advanced, multi-engine download management application designed with flexibility, performance, and intelligent routing as core principles.
 
+## Key Features
+
+### 🌐 Cross-Platform System Integration
+- Advanced platform-specific security management
+- Intelligent network monitoring and optimization
+- Adaptive system resource handling
+- Consistent performance across Windows, macOS, and Linux
+
+### 🔒 Security Capabilities
+- Platform-aware administrator privilege detection
+- Secure password and token management
+- Granular file permission controls
+- Cross-platform security abstraction
+
+### 🌈 Network Intelligence
+- Multi-platform network information retrieval
+- Real-time connection monitoring
+- Adaptive network speed tracking
+- Intelligent connection fallback mechanisms
+
+### 🚀 Performance Optimization
+- Lightweight cross-platform managers
+- Minimal runtime overhead
+- Efficient resource utilization
+- Machine learning-driven optimization strategies
+
+## System Integration Architecture
+
+MAria2 uses a sophisticated, factory-based approach to system integration:
+
+```csharp
+// Automatic platform detection and manager instantiation
+var securityManager = CrossPlatformSecurityManagerFactory.Create(logger);
+var networkManager = CrossPlatformNetworkManagerFactory.Create(logger);
+```
+
+## Comprehensive Documentation
+
+MAria2 provides extensive documentation to help you understand, use, and contribute to the project:
+
+### 🏗️ Project Architecture
+- [System Architecture](/docs/ARCHITECTURE.md)
+- [Project Structure](/docs/ProjectStructure.md)
+
+### 🚀 Performance
+- [Performance Optimization Guide](/docs/PERFORMANCE.md)
+
+### 🔒 Security
+- [Security Architecture](/docs/security.md)
+
+### 🌐 System Integration
+- [Cross-Platform Integration Guide](/docs/system-integration.md)
+
+### 🛠️ Development
+- [Continuous Integration and Deployment](/docs/CICD_README.md)
+- [Contributing Guidelines](/docs/CONTRIBUTING.md)
+
+## Contributing
+1. Fork the repository
+2. Review our [Contributing Guidelines](/docs/CONTRIBUTING.md)
+3. Submit pull requests with clear descriptions
+
+## Detailed Documentation
+
+For more in-depth information about MAria2, explore our comprehensive documentation. Each guide provides insights into different aspects of the project, from architecture and performance to security and system integration.
+
 ## System Requirements
 - .NET 8 Runtime
 - Minimum 4GB RAM
@@ -60,13 +126,6 @@ dotnet publish -c Release -r linux-x64 --self-contained true
 - Prometheus
 - Grafana
 - ML.NET
-
-## Contributing
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ## Troubleshooting
 - Ensure you have the latest .NET 8 runtime

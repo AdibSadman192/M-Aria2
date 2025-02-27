@@ -44,20 +44,25 @@ jobs:
             rid: linux-x64
             artifact-name: MAria2-linux
             package-type: tar.gz
+            dotnet-sdk: 8.0.x
             install-deps: |
               sudo apt-get update
               sudo apt-get install -y rpm ruby ruby-dev build-essential
               sudo gem install fpm
+              sudo apt-get install -y libgdiplus
           - os: macos-latest
             rid: osx-x64
             artifact-name: MAria2-macos
             package-type: dmg
+            dotnet-sdk: 8.0.x
             install-deps: |
               brew install create-dmg
+              brew install mono
           - os: windows-2022
             rid: win-x64
             artifact-name: MAria2-windows
             package-type: exe
+            dotnet-sdk: 8.0.x
             install-deps: |
               choco install innosetup
 
@@ -71,51 +76,62 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: ${{ matrix.dotnet-sdk }}
 
     - name: Install Platform Dependencies
-      shell: pwsh
-      run: |
-        if ("${{ matrix.os }}" -eq "windows-2022") {
-          try {
-            choco install innosetup -y
-            if ($LASTEXITCODE -ne 0) {
-              throw "Chocolatey installation failed"
-            }
-          } catch {
-            Write-Error "Failed to install Inno Setup: $_"
-            exit 1
-          }
-        }
+      shell: bash
+      run: ${{ matrix.install-deps }}
 
     - name: Restore dependencies
-      run: |
-        if [ "${{ matrix.os }}" == "ubuntu-24.04" ]; then
-          dotnet restore ${{ env.SOLUTION_NAME }} /p:EnableWindowsTargeting=false
-        else
-          dotnet restore ${{ env.SOLUTION_NAME }}
-        fi
       shell: bash
+      run: |
+        # Unified restore with platform-specific configurations
+        if [[ "${{ matrix.os }}" != "windows-2022" ]]; then
+          dotnet restore ${{ env.SOLUTION_NAME }} \
+            /p:EnableWindowsTargeting=false \
+            /p:DisableWinUIProjectSystemRegistration=true \
+            /p:RuntimeIdentifier=${{ matrix.rid }} \
+            /p:PublishProfile=cross-platform-profile \
+            /p:PublishTrimmed=true \
+            /p:PublishSingleFile=true
+        else
+          dotnet restore ${{ env.SOLUTION_NAME }} \
+            /p:RuntimeIdentifier=${{ matrix.rid }} \
+            /p:PublishProfile=win-x64-framework-dependent \
+            /p:PublishTrimmed=true \
+            /p:PublishSingleFile=true
+        fi
 
     - name: Build
-      run: |
-        if [ "${{ matrix.os }}" == "ubuntu-24.04" ]; then
-          dotnet build ${{ env.SOLUTION_NAME }} -c Release --no-restore \
-            -p:RuntimeIdentifier=${{ matrix.rid }} \
-            -p:PublishSingleFile=true \
-            -p:PublishTrimmed=true \
-            -p:EnableWindowsTargeting=false
-        else
-          dotnet build ${{ env.SOLUTION_NAME }} -c Release --no-restore \
-            -p:RuntimeIdentifier=${{ matrix.rid }} \
-            -p:PublishSingleFile=true \
-            -p:PublishTrimmed=true
-        fi
       shell: bash
+      run: |
+        # Comprehensive build with platform-specific optimizations
+        if [[ "${{ matrix.os }}" != "windows-2022" ]]; then
+          dotnet build ${{ env.SOLUTION_NAME }} \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --no-restore \
+            /p:PublishTrimmed=true \
+            /p:PublishSingleFile=true \
+            /p:PublishReadyToRun=true \
+            /p:ContinuousIntegrationBuild=true
+        else
+          dotnet build ${{ env.SOLUTION_NAME }} \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --no-restore \
+            /p:PublishTrimmed=true \
+            /p:PublishSingleFile=true \
+            /p:PublishReadyToRun=true \
+            /p:ContinuousIntegrationBuild=true \
+            /p:UseWindowsForms=true
+        fi
 
     - name: Publish
+      shell: bash
       run: |
-        if [ "${{ matrix.os }}" == "ubuntu-24.04" ]; then
+        # Unified publish with platform-specific configurations
+        if [[ "${{ matrix.os }}" != "windows-2022" ]]; then
           dotnet publish ${{ env.PROJECT_NAME }} \
             -c Release \
             -r ${{ matrix.rid }} \
@@ -123,6 +139,7 @@ jobs:
             -p:PublishSingleFile=true \
             -p:PublishTrimmed=true \
             -p:EnableWindowsTargeting=false \
+            -p:DisableWinUIProjectSystemRegistration=true \
             -o ./publish/${{ matrix.artifact-name }}
         else
           dotnet publish ${{ env.PROJECT_NAME }} \
@@ -133,7 +150,25 @@ jobs:
             -p:PublishTrimmed=true \
             -o ./publish/${{ matrix.artifact-name }}
         fi
+
+    - name: Platform Compatibility Testing
       shell: bash
+      run: |
+        # Run platform compatibility validation
+        dotnet test ${{ env.SOLUTION_NAME }} \
+          --filter "TestCategory=PlatformCompatibility" \
+          --logger "trx;LogFileName=platform-compatibility-results.trx" \
+          --verbosity normal
+
+    - name: Upload Platform Compatibility Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: platform-compatibility-test-results
+        path: |
+          **/TestResults/platform-compatibility-results.trx
+          **/platform-compatibility-logs/*.log
+        retention-days: 7
 
     - name: Package Windows
       if: matrix.os == 'windows-2022'

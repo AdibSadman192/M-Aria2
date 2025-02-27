@@ -1,8 +1,12 @@
 using Microsoft.UI.Xaml;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MAria2.Application;
 using MAria2.Infrastructure;
 using MAria2.Presentation.WinUI.Services;
+using MAria2.Presentation.WinUI.Configuration;
+using MAria2.Presentation.WinUI.CrossPlatform;
+using Serilog;
 
 namespace MAria2.Presentation.WinUI;
 
@@ -13,18 +17,26 @@ public partial class App : Application
     private readonly SettingsService _settingsService;
     private readonly NotificationService _notificationService;
     private readonly IDependencyUpdateService _dependencyUpdateService;
+    private readonly ILogger<App> _logger;
 
     public App()
     {
         InitializeComponent();
 
+        // Configure Logging
+        ConfigureLogging();
+
         // Configure Dependency Injection
         ServiceProvider = ConfigureServices();
+
+        // Validate Platform Compatibility
+        ValidatePlatformCompatibility();
 
         // Resolve services
         _errorHandlingService = ServiceProvider.GetRequiredService<ErrorHandlingService>();
         _settingsService = ServiceProvider.GetRequiredService<SettingsService>();
         _notificationService = ServiceProvider.GetRequiredService<NotificationService>();
+        _logger = ServiceProvider.GetRequiredService<ILogger<App>>();
 
         // Set up main window
         Title = "M-Aria2 Universal Download Manager";
@@ -42,9 +54,26 @@ public partial class App : Application
         SetupGlobalExceptionHandling();
     }
 
+    private void ConfigureLogging()
+    {
+        // Configure Serilog for comprehensive logging
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .WriteTo.File("logs/maria2_platform_log.txt", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+    }
+
     private IServiceProvider ConfigureServices()
     {
         var services = new ServiceCollection();
+
+        // Add logging
+        services.AddLogging(configure => 
+        {
+            configure.AddSerilog(dispose: true);
+            configure.AddConsole();
+        });
 
         // Add application and infrastructure services
         services
@@ -74,7 +103,8 @@ public partial class App : Application
                         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + 
                         "\\Downloads";
                 }
-            );
+            )
+            .AddCrossPlatformServices(); // Add cross-platform service registration
 
         // Register dependency verification service
         services.AddSingleton<IDependencyVerificationService>(sp => 
@@ -89,7 +119,49 @@ public partial class App : Application
         // Add presentation layer services
         services.AddSingleton(this);
 
-        return services.BuildServiceProvider();
+        // Build service provider
+        var serviceProvider = services.BuildServiceProvider();
+
+        return serviceProvider;
+    }
+
+    private void ValidatePlatformCompatibility()
+    {
+        try 
+        {
+            // Validate platform-specific dependencies
+            CrossPlatformDependencyConfig.ValidatePlatformDependencies(ServiceProvider);
+
+            // Perform comprehensive platform compatibility check
+            PlatformCompatibilityValidator.ValidateCrossPlatformManagers(
+                ServiceProvider.GetRequiredService<ILogger<App>>()
+            );
+
+            _logger?.LogInformation("Platform compatibility validation successful");
+        }
+        catch (Exception ex)
+        {
+            // Log critical platform compatibility failure
+            _logger?.LogCritical(
+                $"Platform compatibility validation failed: {ex.Message}\n{ex.StackTrace}"
+            );
+
+            // Show critical error notification
+            ShowPlatformCompatibilityErrorNotification(ex);
+
+            // Optionally terminate the application
+            Environment.Exit(1);
+        }
+    }
+
+    private void ShowPlatformCompatibilityErrorNotification(Exception ex)
+    {
+        // Implement a cross-platform error notification mechanism
+        // This could be a system dialog, logging, or other notification method
+        _notificationService?.ShowCriticalErrorNotification(
+            "Platform Compatibility Error", 
+            $"The application cannot start due to platform compatibility issues.\n\nError: {ex.Message}"
+        );
     }
 
     private void ApplyTheme()
