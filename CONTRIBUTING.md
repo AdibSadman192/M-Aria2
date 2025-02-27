@@ -58,7 +58,7 @@ MAria2 is an open-source, cross-platform download management application. We app
 
 ```bash
 # Clone the repository
-git clone https://github.com/Adibsadman192/MAria2.git
+git clone https://github.com/Adibsadman192/M-Aria2.git
 
 # Create a feature branch
 git checkout -b feature/your-awesome-feature
