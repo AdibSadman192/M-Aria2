@@ -1,5 +1,21 @@
 # M-Aria2 Universal Download Manager
 
+<div align="center">
+    <img src="docs/img/logo.png" alt="M-Aria2 Download Manager - Intelligent, Cross-Platform Download Management" width="250" height="250">
+</div>
+
+<div align="center">
+    <a href="https://github.com/Adibsadman192/M-Aria2/releases">
+        <img alt="GitHub release (latest by date)" src="https://img.shields.io/github/v/release/Adibsadman192/M-Aria2">
+    </a>
+    <a href="https://github.com/Adibsadman192/M-Aria2/actions">
+        <img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/Adibsadman192/M-Aria2/MAria2%20Cross-Platform%20Build%20and%20Release">
+    </a>
+    <a href="https://github.com/Adibsadman192/M-Aria2/blob/main/LICENSE">
+        <img alt="GitHub license" src="https://img.shields.io/github/license/Adibsadman192/M-Aria2">
+    </a>
+</div>
+
 ## Overview
 MAria2 is an advanced, multi-engine download management application designed with flexibility, performance, and intelligent routing as core principles.
 
@@ -136,4 +152,4 @@ dotnet publish -c Release -r linux-x64 --self-contained true
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
-Project Link: [https://github.com/Adibsadman192/MAria2](https://github.com/Adibsadman192/MAria2)
+Project Link: [https://github.com/Adibsadman192/M-Aria2](https://github.com/Adibsadman192/M-Aria2)
