@@ -8,8 +8,30 @@ on:
   release:
     types: [ created ]
 
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  PROJECT_NAME: MAria2.Presentation.WinUI
+  SOLUTION_NAME: MAria2.sln
+
 jobs:
+  validate-project:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Validate Project Structure
+      run: |
+        if [ ! -f "${{ env.SOLUTION_NAME }}" ]; then
+          echo "Solution file not found: ${{ env.SOLUTION_NAME }}"
+          exit 1
+        fi
+        if [ ! -d "${{ env.PROJECT_NAME }}" ]; then
+          echo "Project directory not found: ${{ env.PROJECT_NAME }}"
+          exit 1
+        fi
+
   build:
+    needs: validate-project
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -18,14 +40,22 @@ jobs:
             rid: linux-x64
             artifact-name: MAria2-linux
             package-type: tar.gz
+            install-deps: |
+              sudo apt-get update
+              sudo apt-get install -y rpm ruby ruby-dev build-essential
+              sudo gem install fpm
           - os: macos-latest
             rid: osx-x64
             artifact-name: MAria2-macos
             package-type: dmg
+            install-deps: |
+              brew install create-dmg
           - os: windows-latest
             rid: win-x64
             artifact-name: MAria2-windows
             package-type: exe
+            install-deps: |
+              choco install innosetup
 
     runs-on: ${{ matrix.os }}
 
@@ -39,20 +69,23 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+    - name: Install Platform Dependencies
+      run: ${{ matrix.install-deps }}
+      shell: bash
+
     - name: Restore dependencies
-      run: dotnet restore MAria2.sln
+      run: dotnet restore ${{ env.SOLUTION_NAME }}
 
     - name: Build
       run: |
-        dotnet build MAria2.sln -c Release --no-restore \
-          -p:PublishProfile=FolderProfile \
+        dotnet build ${{ env.SOLUTION_NAME }} -c Release --no-restore \
           -p:RuntimeIdentifier=${{ matrix.rid }} \
           -p:PublishSingleFile=true \
           -p:PublishTrimmed=true
 
     - name: Publish
       run: |
-        dotnet publish MAria2.Presentation \
+        dotnet publish ${{ env.PROJECT_NAME }} \
           -c Release \
           -r ${{ matrix.rid }} \
           --self-contained true \
@@ -63,14 +96,12 @@ jobs:
     - name: Package Windows
       if: matrix.os == 'windows-latest'
       run: |
-        choco install innosetup
-        iscc /Q /F"MAria2-Installer" .\installer\windows-installer.iss
-        Move-Item -Path .\MAria2-Installer.exe -Destination ./publish/${{ matrix.artifact-name }}/
+        iscc /Q /F"MAria2-Installer" .\installer\windows-installer.iss || exit 1
+        Move-Item -Path .\MAria2-Installer.exe -Destination ./publish/${{ matrix.artifact-name }}/ -ErrorAction Stop
 
     - name: Package macOS
       if: matrix.os == 'macos-latest'
       run: |
-        brew install create-dmg
         create-dmg \
           --volname "MAria2 Installer" \
           --window-pos 200 120 \
@@ -79,22 +110,21 @@ jobs:
           --app-drop-link 600 185 \
           --background ./installer/macos-background.png \
           ./publish/${{ matrix.artifact-name }}/MAria2.dmg \
-          ./publish/${{ matrix.artifact-name }}/
+          ./publish/${{ matrix.artifact-name }}/ || exit 1
 
     - name: Package Linux
       if: matrix.os == 'ubuntu-latest'
       run: |
-        sudo apt-get update
-        sudo apt-get install -y rpm
         tar -czvf ./publish/${{ matrix.artifact-name }}/MAria2.tar.gz -C ./publish/${{ matrix.artifact-name }} .
-        fpm -s dir -t deb -n maria2 -v 1.0.0 ./publish/${{ matrix.artifact-name }}
-        fpm -s dir -t rpm -n maria2 -v 1.0.0 ./publish/${{ matrix.artifact-name }}
+        fpm -s dir -t deb -n maria2 -v 1.0.0 ./publish/${{ matrix.artifact-name }} || exit 1
+        fpm -s dir -t rpm -n maria2 -v 1.0.0 ./publish/${{ matrix.artifact-name }} || exit 1
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.artifact-name }}
         path: ./publish/${{ matrix.artifact-name }}
+        retention-days: 5
 
   release:
     needs: build
@@ -104,24 +134,46 @@ jobs:
     steps:
     - name: Download Artifacts
       uses: actions/download-artifact@v3
+      with:
+        path: ./artifacts
+
+    - name: Verify Artifacts
+      run: |
+        for artifact in MAria2-linux MAria2-macos MAria2-windows; do
+          if [ ! -d "./artifacts/$artifact" ]; then
+            echo "Artifact $artifact is missing"
+            exit 1
+          fi
+        done
 
     - name: Upload Release Assets
       uses: actions/github-script@v6
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
           const fs = require('fs');
+          const path = require('path');
           const artifacts = ['MAria2-linux', 'MAria2-macos', 'MAria2-windows'];
           
           for (const artifact of artifacts) {
-            const files = fs.readdirSync(artifact);
+            const artifactPath = path.join('./artifacts', artifact);
+            const files = fs.readdirSync(artifactPath);
+            
             for (const file of files) {
-              await github.rest.repos.uploadReleaseAsset({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                release_id: ${{ github.event.release.id }},
-                name: file,
-                data: fs.readFileSync(`${artifact}/${file}`)
-              });
+              const filePath = path.join(artifactPath, file);
+              
+              try {
+                await github.rest.repos.uploadReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: ${{ github.event.release.id }},
+                  name: file,
+                  data: fs.readFileSync(filePath)
+                });
+                console.log(`Uploaded: ${file}`);
+              } catch (error) {
+                console.error(`Failed to upload ${file}: ${error.message}`);
+              }
             }
           }
