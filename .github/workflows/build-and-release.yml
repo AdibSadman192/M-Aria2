@@ -14,11 +14,16 @@ env:
   PROJECT_NAME: MAria2.Presentation.WinUI
   SOLUTION_NAME: MAria2.sln
 
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
 jobs:
   validate-project:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Validate Project Structure
       run: |
         if [ ! -f "${{ env.SOLUTION_NAME }}" ]; then
@@ -34,9 +39,9 @@ jobs:
     needs: validate-project
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-24.04, macos-latest, windows-2022]
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             rid: linux-x64
             artifact-name: MAria2-linux
             package-type: tar.gz
@@ -50,7 +55,7 @@ jobs:
             package-type: dmg
             install-deps: |
               brew install create-dmg
-          - os: windows-latest
+          - os: windows-2022
             rid: win-x64
             artifact-name: MAria2-windows
             package-type: exe
@@ -60,12 +65,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
 
@@ -94,7 +99,7 @@ jobs:
           -o ./publish/${{ matrix.artifact-name }}
 
     - name: Package Windows
-      if: matrix.os == 'windows-latest'
+      if: matrix.os == 'windows-2022'
       run: |
         iscc /Q /F"MAria2-Installer" .\installer\windows-installer.iss || exit 1
         Move-Item -Path .\MAria2-Installer.exe -Destination ./publish/${{ matrix.artifact-name }}/ -ErrorAction Stop
@@ -113,29 +118,32 @@ jobs:
           ./publish/${{ matrix.artifact-name }}/ || exit 1
 
     - name: Package Linux
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-24.04'
       run: |
         tar -czvf ./publish/${{ matrix.artifact-name }}/MAria2.tar.gz -C ./publish/${{ matrix.artifact-name }} .
         fpm -s dir -t deb -n maria2 -v 1.0.0 ./publish/${{ matrix.artifact-name }} || exit 1
         fpm -s dir -t rpm -n maria2 -v 1.0.0 ./publish/${{ matrix.artifact-name }} || exit 1
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.artifact-name }}
         path: ./publish/${{ matrix.artifact-name }}
         retention-days: 5
+        overwrite: true
+        compression-level: 9
 
   release:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'release'
     
     steps:
     - name: Download Artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: ./artifacts
+        merge-multiple: true
 
     - name: Verify Artifacts
       run: |
@@ -147,7 +155,7 @@ jobs:
         done
 
     - name: Upload Release Assets
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
