@@ -78,7 +78,7 @@ For more in-depth information about MAria2, explore our comprehensive documentat
 ## Installation Options
 
 ### Automatic Installation (Recommended)
-1. Go to [Releases](https://github.com/Adibsadman192/MAria2/releases)
+1. Go to [Releases](https://github.com/Adibsadman192/M-Aria2/releases)
 2. Download the appropriate installer for your platform:
    - Windows: `MAria2-windows.exe`
    - macOS: `MAria2-macos.dmg`
@@ -130,7 +130,7 @@ dotnet publish -c Release -r linux-x64 --self-contained true
 ## Troubleshooting
 - Ensure you have the latest .NET 8 runtime
 - Check system compatibility using the built-in compatibility checker
-- Refer to our [Wiki](https://github.com/Adibsadman192/MAria2/wiki) for detailed guides
+- Refer to our [Wiki](https://github.com/Adibsadman192/M-Aria2/wiki) for detailed guides
 
 ## License
 Distributed under the MIT License. See `LICENSE` for more information.
