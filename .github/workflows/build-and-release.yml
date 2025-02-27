@@ -39,7 +39,6 @@ jobs:
     needs: validate-project
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-latest, windows-2022]
         include:
           - os: ubuntu-24.04
             rid: linux-x64
@@ -75,34 +74,78 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Install Platform Dependencies
-      run: ${{ matrix.install-deps }}
-      shell: bash
+      shell: pwsh
+      run: |
+        if ("${{ matrix.os }}" -eq "windows-2022") {
+          try {
+            choco install innosetup -y
+            if ($LASTEXITCODE -ne 0) {
+              throw "Chocolatey installation failed"
+            }
+          } catch {
+            Write-Error "Failed to install Inno Setup: $_"
+            exit 1
+          }
+        }
 
     - name: Restore dependencies
-      run: dotnet restore ${{ env.SOLUTION_NAME }}
+      run: |
+        if [ "${{ matrix.os }}" == "ubuntu-24.04" ]; then
+          dotnet restore ${{ env.SOLUTION_NAME }} /p:EnableWindowsTargeting=false
+        else
+          dotnet restore ${{ env.SOLUTION_NAME }}
+        fi
+      shell: bash
 
     - name: Build
       run: |
-        dotnet build ${{ env.SOLUTION_NAME }} -c Release --no-restore \
-          -p:RuntimeIdentifier=${{ matrix.rid }} \
-          -p:PublishSingleFile=true \
-          -p:PublishTrimmed=true
+        if [ "${{ matrix.os }}" == "ubuntu-24.04" ]; then
+          dotnet build ${{ env.SOLUTION_NAME }} -c Release --no-restore \
+            -p:RuntimeIdentifier=${{ matrix.rid }} \
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:EnableWindowsTargeting=false
+        else
+          dotnet build ${{ env.SOLUTION_NAME }} -c Release --no-restore \
+            -p:RuntimeIdentifier=${{ matrix.rid }} \
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true
+        fi
+      shell: bash
 
     - name: Publish
       run: |
-        dotnet publish ${{ env.PROJECT_NAME }} \
-          -c Release \
-          -r ${{ matrix.rid }} \
-          --self-contained true \
-          -p:PublishSingleFile=true \
-          -p:PublishTrimmed=true \
-          -o ./publish/${{ matrix.artifact-name }}
+        if [ "${{ matrix.os }}" == "ubuntu-24.04" ]; then
+          dotnet publish ${{ env.PROJECT_NAME }} \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:EnableWindowsTargeting=false \
+            -o ./publish/${{ matrix.artifact-name }}
+        else
+          dotnet publish ${{ env.PROJECT_NAME }} \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -o ./publish/${{ matrix.artifact-name }}
+        fi
+      shell: bash
 
     - name: Package Windows
       if: matrix.os == 'windows-2022'
+      shell: pwsh
       run: |
-        iscc /Q /F"MAria2-Installer" .\installer\windows-installer.iss || exit 1
-        Move-Item -Path .\MAria2-Installer.exe -Destination ./publish/${{ matrix.artifact-name }}/ -ErrorAction Stop
+        try {
+          iscc /Q /F"MAria2-Installer" .\installer\windows-installer.iss
+          Move-Item -Path .\MAria2-Installer.exe -Destination ./publish/${{ matrix.artifact-name }}/ -ErrorAction Stop
+        } catch {
+          Write-Error "Windows packaging failed: $_"
+          exit 1
+        }
 
     - name: Package macOS
       if: matrix.os == 'macos-latest'
