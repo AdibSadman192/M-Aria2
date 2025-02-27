@@ -1,0 +1,69 @@
+{
+  "supportedPlatforms": [
+    {
+      "operatingSystem": "Windows",
+      "minimumVersion": "10.0.19041.0",
+      "architectures": ["X64", "X86"],
+      "recommendedVersion": "11.0.22000.0"
+    },
+    {
+      "operatingSystem": "MacOS",
+      "minimumVersion": "10.15.0",
+      "architectures": ["X64", "Arm64"],
+      "recommendedVersion": "12.0.0"
+    },
+    {
+      "operatingSystem": "Linux",
+      "minimumVersion": "5.4.0",
+      "architectures": ["X64", "Arm64"],
+      "recommendedDistributions": [
+        "Ubuntu 20.04+",
+        "Fedora 33+",
+        "Debian 10+",
+        "CentOS 8+"
+      ]
+    }
+  ],
+  "requiredDependencies": {
+    "Windows": [
+      "dotnet-runtime-8.0",
+      "ffmpeg",
+      "wget"
+    ],
+    "MacOS": [
+      "dotnet-runtime-8.0",
+      "homebrew",
+      "ffmpeg",
+      "wget"
+    ],
+    "Linux": [
+      "dotnet-runtime-8.0",
+      "ffmpeg",
+      "wget",
+      "libssl-dev"
+    ]
+  },
+  "performanceRecommendations": {
+    "minimumSystemRequirements": {
+      "ram": 8,
+      "cpuCores": 4,
+      "diskSpace": 10
+    },
+    "recommendedSystemRequirements": {
+      "ram": 16,
+      "cpuCores": 8,
+      "diskSpace": 50
+    }
+  },
+  "crossPlatformFeatureSupport": {
+    "downloadEngines": {
+      "Aria2": ["Windows", "MacOS", "Linux"],
+      "WinInet": ["Windows"],
+      "YT-DLP": ["Windows", "MacOS", "Linux"]
+    },
+    "mediaProcessing": {
+      "thumbnailGeneration": ["Windows", "MacOS", "Linux"],
+      "metadataExtraction": ["Windows", "MacOS", "Linux"]
+    }
+  }
+}

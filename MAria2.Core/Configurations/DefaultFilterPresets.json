@@ -1,0 +1,46 @@
+{
+  "presets": [
+    {
+      "id": "media-filter-preset",
+      "name": "Media Download Filter",
+      "criteria": {
+        "allowedFileTypes": ["mp4", "mkv", "mp3", "avi", "mov"],
+        "minFileSize": 1048576,
+        "maxFileSize": 10737418240,
+        "blockedDomains": ["spam.com", "malware.net"],
+        "metadataFilters": {
+          "quality": "HD",
+          "language": "en"
+        }
+      }
+    },
+    {
+      "id": "document-filter-preset", 
+      "name": "Document Download Filter",
+      "criteria": {
+        "allowedFileTypes": ["pdf", "docx", "xlsx", "txt"],
+        "minFileSize": 1024,
+        "maxFileSize": 104857600,
+        "blockedDomains": ["suspicious-sites.com"]
+      }
+    },
+    {
+      "id": "software-filter-preset",
+      "name": "Software Download Filter",
+      "criteria": {
+        "allowedFileTypes": ["exe", "msi", "dmg", "zip", "rar"],
+        "minFileSize": 1048576,
+        "maxFileSize": 2147483648,
+        "blockedDomains": ["unknown-sources.com"],
+        "metadataFilters": {
+          "verified": true
+        }
+      }
+    }
+  ],
+  "globalSettings": {
+    "maxConcurrentFilters": 5,
+    "filterProcessingTimeout": 30,
+    "defaultFilterPriority": "Medium"
+  }
+}

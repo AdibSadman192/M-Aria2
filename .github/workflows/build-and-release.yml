@@ -1,0 +1,127 @@
+name: MAria2 Cross-Platform Build and Release
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ created ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact-name: MAria2-linux
+            package-type: tar.gz
+          - os: macos-latest
+            rid: osx-x64
+            artifact-name: MAria2-macos
+            package-type: dmg
+          - os: windows-latest
+            rid: win-x64
+            artifact-name: MAria2-windows
+            package-type: exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore MAria2.sln
+
+    - name: Build
+      run: |
+        dotnet build MAria2.sln -c Release --no-restore \
+          -p:PublishProfile=FolderProfile \
+          -p:RuntimeIdentifier=${{ matrix.rid }} \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=true
+
+    - name: Publish
+      run: |
+        dotnet publish MAria2.Presentation \
+          -c Release \
+          -r ${{ matrix.rid }} \
+          --self-contained true \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=true \
+          -o ./publish/${{ matrix.artifact-name }}
+
+    - name: Package Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install innosetup
+        iscc /Q /F"MAria2-Installer" .\installer\windows-installer.iss
+        Move-Item -Path .\MAria2-Installer.exe -Destination ./publish/${{ matrix.artifact-name }}/
+
+    - name: Package macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install create-dmg
+        create-dmg \
+          --volname "MAria2 Installer" \
+          --window-pos 200 120 \
+          --window-size 800 400 \
+          --icon-size 100 \
+          --app-drop-link 600 185 \
+          --background ./installer/macos-background.png \
+          ./publish/${{ matrix.artifact-name }}/MAria2.dmg \
+          ./publish/${{ matrix.artifact-name }}/
+
+    - name: Package Linux
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y rpm
+        tar -czvf ./publish/${{ matrix.artifact-name }}/MAria2.tar.gz -C ./publish/${{ matrix.artifact-name }} .
+        fpm -s dir -t deb -n maria2 -v 1.0.0 ./publish/${{ matrix.artifact-name }}
+        fpm -s dir -t rpm -n maria2 -v 1.0.0 ./publish/${{ matrix.artifact-name }}
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: ./publish/${{ matrix.artifact-name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Download Artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Upload Release Assets
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const fs = require('fs');
+          const artifacts = ['MAria2-linux', 'MAria2-macos', 'MAria2-windows'];
+          
+          for (const artifact of artifacts) {
+            const files = fs.readdirSync(artifact);
+            for (const file of files) {
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: ${{ github.event.release.id }},
+                name: file,
+                data: fs.readFileSync(`${artifact}/${file}`)
+              });
+            }
+          }

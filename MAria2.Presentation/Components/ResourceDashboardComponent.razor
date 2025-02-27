@@ -1,0 +1,188 @@
+@page "/resource-dashboard"
+@using MAria2.Core.Interfaces
+@using System.Threading
+@inject IResourceDashboardService ResourceDashboardService
+@inject ILogger<ResourceDashboardComponent> Logger
+@implements IAsyncDisposable
+
+<div class="resource-dashboard">
+    <h1>System Resource Dashboard</h1>
+
+    @if (_isLoading)
+    {
+        <LoadingSpinner />
+    }
+    else
+    {
+        <div class="dashboard-grid">
+            <ResourceCard Title="CPU Utilization" 
+                          Value="@($"{_currentDashboardData.SystemResources.CpuUtilization:F2}%")"
+                          Trend="@_cpuTrend"
+                          Color="@GetUtilizationColor(_currentDashboardData.SystemResources.CpuUtilization)" />
+
+            <ResourceCard Title="Memory Utilization" 
+                          Value="@($"{_currentDashboardData.SystemResources.MemoryUtilization:F2}%")"
+                          Trend="@_memoryTrend"
+                          Color="@GetUtilizationColor(_currentDashboardData.SystemResources.MemoryUtilization)" />
+
+            <ResourceCard Title="Network Utilization" 
+                          Value="@($"{_currentDashboardData.SystemResources.NetworkUtilization:F2}%")"
+                          Trend="@_networkTrend"
+                          Color="@GetUtilizationColor(_currentDashboardData.SystemResources.NetworkUtilization)" />
+
+            <DownloadPerformanceCard 
+                ActiveDownloads="@_currentDashboardData.DownloadResources.ActiveDownloads"
+                TotalBytesDownloaded="@_currentDashboardData.DownloadResources.TotalBytesDownloaded"
+                AverageSpeed="@_currentDashboardData.DownloadResources.AverageDownloadSpeed" />
+        </div>
+
+        <div class="performance-indicators">
+            <PerformanceIndicatorChart 
+                SystemPerformanceScore="@_currentDashboardData.PerformanceMetrics.OverallSystemPerformanceScore"
+                DownloadPerformanceScore="@_currentDashboardData.PerformanceMetrics.DownloadPerformanceScore"
+                IsSystemOverloaded="@_currentDashboardData.PerformanceMetrics.IsSystemOverloaded" />
+        </div>
+
+        <div class="alerts-section">
+            <ResourceAlertList Alerts="@_currentAlerts" />
+        </div>
+
+        <div class="historical-charts">
+            <ResourceHistoryChart HistoricalData="@_historicalResourceData" />
+        </div>
+    }
+</div>
+
+@code {
+    private ResourceDashboardData _currentDashboardData = new();
+    private IEnumerable<ResourceAlert> _currentAlerts = new List<ResourceAlert>();
+    private IEnumerable<HistoricalResourceData> _historicalResourceData = new List<HistoricalResourceData>();
+    private bool _isLoading = true;
+
+    private string _cpuTrend = "neutral";
+    private string _memoryTrend = "neutral";
+    private string _networkTrend = "neutral";
+
+    private CancellationTokenSource _updateCancellationSource = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            // Initial data load
+            await LoadDashboardDataAsync();
+
+            // Start real-time updates
+            _ = StartResourceUpdatesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"Dashboard initialization failed: {ex.Message}");
+        }
+    }
+
+    private async Task LoadDashboardDataAsync()
+    {
+        _currentDashboardData = await ResourceDashboardService.GetCurrentDashboardDataAsync();
+        _currentAlerts = await ResourceDashboardService.GetCurrentAlertsAsync();
+        _historicalResourceData = await ResourceDashboardService.GetHistoricalResourceDataAsync(TimeSpan.FromHours(1));
+
+        UpdateResourceTrends();
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task StartResourceUpdatesAsync()
+    {
+        try 
+        {
+            await foreach (var dashboardData in ResourceDashboardService
+                .SubscribeToResourceUpdatesAsync(
+                    TimeSpan.FromSeconds(5), 
+                    _updateCancellationSource.Token))
+            {
+                _currentDashboardData = dashboardData;
+                _currentAlerts = await ResourceDashboardService.GetCurrentAlertsAsync();
+                
+                UpdateResourceTrends();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when component is disposed
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"Resource updates failed: {ex.Message}");
+        }
+    }
+
+    private void UpdateResourceTrends()
+    {
+        _cpuTrend = GetTrendDirection(_currentDashboardData.SystemResources.CpuUtilization);
+        _memoryTrend = GetTrendDirection(_currentDashboardData.SystemResources.MemoryUtilization);
+        _networkTrend = GetTrendDirection(_currentDashboardData.SystemResources.NetworkUtilization);
+    }
+
+    private string GetTrendDirection(double currentUtilization)
+    {
+        return currentUtilization switch
+        {
+            > 80 => "rising",
+            < 50 => "falling",
+            _ => "neutral"
+        };
+    }
+
+    private string GetUtilizationColor(double utilization)
+    {
+        return utilization switch
+        {
+            > 90 => "danger",
+            > 70 => "warning",
+            _ => "success"
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _updateCancellationSource.Cancel();
+        _updateCancellationSource.Dispose();
+    }
+}
+
+@* Partial Components *@
+@code {
+    private partial class ResourceCard : ComponentBase
+    {
+        [Parameter] public string Title { get; set; }
+        [Parameter] public string Value { get; set; }
+        [Parameter] public string Trend { get; set; }
+        [Parameter] public string Color { get; set; }
+    }
+
+    private partial class DownloadPerformanceCard : ComponentBase
+    {
+        [Parameter] public int ActiveDownloads { get; set; }
+        [Parameter] public long TotalBytesDownloaded { get; set; }
+        [Parameter] public double AverageSpeed { get; set; }
+    }
+
+    private partial class PerformanceIndicatorChart : ComponentBase
+    {
+        [Parameter] public double SystemPerformanceScore { get; set; }
+        [Parameter] public double DownloadPerformanceScore { get; set; }
+        [Parameter] public bool IsSystemOverloaded { get; set; }
+    }
+
+    private partial class ResourceAlertList : ComponentBase
+    {
+        [Parameter] public IEnumerable<ResourceAlert> Alerts { get; set; }
+    }
+
+    private partial class ResourceHistoryChart : ComponentBase
+    {
+        [Parameter] public IEnumerable<HistoricalResourceData> HistoricalData { get; set; }
+    }
+}

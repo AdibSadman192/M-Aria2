@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+  maria2-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: maria2-download-manager
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    volumes:
+      - ./downloads:/app/downloads
+      - ./config:/app/config
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - MARIA2_DOWNLOAD_PATH=/app/downloads
+      - MARIA2_CONFIG_PATH=/app/config
+    restart: unless-stopped
+    networks:
+      - maria2-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  maria2-redis:
+    image: redis:alpine
+    container_name: maria2-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - maria2-network
+    restart: unless-stopped
+
+  maria2-prometheus:
+    image: prom/prometheus
+    container_name: maria2-monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - maria2-network
+    restart: unless-stopped
+
+  maria2-grafana:
+    image: grafana/grafana
+    container_name: maria2-dashboard
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - maria2-network
+    depends_on:
+      - maria2-prometheus
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  maria2-network:
+    driver: bridge

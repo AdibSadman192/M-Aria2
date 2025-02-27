@@ -1,0 +1,51 @@
+<Window
+    x:Class="MAria2.Presentation.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MAria2.Presentation.WinUI.Controls"
+    xmlns:pages="using:MAria2.Presentation.WinUI.Pages">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Top Navigation -->
+            <RowDefinition Height="*"/>     <!-- Main Content -->
+            <RowDefinition Height="Auto"/>  <!-- Status Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- Top Navigation Bar -->
+        <NavigationView 
+            x:Name="MainNavigationView"
+            Grid.Row="0"
+            PaneDisplayMode="Top"
+            IsBackButtonVisible="Collapsed"
+            SelectionChanged="MainNavigationView_SelectionChanged">
+            
+            <NavigationView.MenuItems>
+                <NavigationViewItem 
+                    Content="Downloads" 
+                    Icon="Download"
+                    Tag="DownloadsPage"/>
+                
+                <NavigationViewItem 
+                    Content="Completed" 
+                    Icon="Accept"
+                    Tag="CompletedDownloadsPage"/>
+                
+                <NavigationViewItem 
+                    Content="Settings" 
+                    Icon="Setting"
+                    Tag="SettingsPage"/>
+            </NavigationView.MenuItems>
+        </NavigationView>
+
+        <!-- Main Content Frame -->
+        <Frame 
+            x:Name="MainContentFrame" 
+            Grid.Row="1"/>
+
+        <!-- Status Bar -->
+        <controls:StatusBarControl 
+            x:Name="MainStatusBar"
+            Grid.Row="2"/>
+    </Grid>
+</Window>

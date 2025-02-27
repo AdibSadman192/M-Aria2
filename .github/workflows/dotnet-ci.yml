@@ -1,0 +1,141 @@
+name: MAria2 Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  CONFIGURATION: Release
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    # Install .NET SDK
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    # Install FFmpeg for media processing tests
+    - name: Install FFmpeg
+      run: |
+        choco install ffmpeg
+        echo "FFmpeg installed successfully"
+
+    # Restore dependencies
+    - name: Restore dependencies
+      run: dotnet restore MAria2.sln
+
+    # Build solution
+    - name: Build Solution
+      run: dotnet build MAria2.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+
+    # Run unit tests
+    - name: Run Unit Tests
+      run: dotnet test MAria2.UnitTests\MAria2.UnitTests.csproj --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal
+
+    # Run integration tests
+    - name: Run Integration Tests
+      run: dotnet test MAria2.IntegrationTests\MAria2.IntegrationTests.csproj --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal
+
+    # Code coverage
+    - name: Generate Code Coverage
+      run: |
+        dotnet tool install -g coverlet.console
+        coverlet MAria2.UnitTests\bin\${{ env.CONFIGURATION }}\net8.0\MAria2.UnitTests.dll \
+          --target "dotnet" \
+          --targetargs "test MAria2.sln --no-build" \
+          -f opencover \
+          -o coverage.xml
+
+    # Upload coverage to CodeCov
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        fail_ci_if_error: true
+
+  security-scan:
+    name: Security Scan
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    # Scan for vulnerable dependencies
+    - name: Scan Dependencies
+      run: |
+        dotnet tool install -g dotnet-retire
+        dotnet retire
+
+    # Static code analysis
+    - name: Static Code Analysis
+      uses: microsoft/security-devops-action@preview
+      with:
+        categories: 'IaC,Secrets,Code'
+
+  performance-benchmark:
+    name: Performance Benchmark
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    # Run performance benchmarks
+    - name: Run Performance Benchmarks
+      run: dotnet run --project MAria2.Benchmarks\MAria2.Benchmarks.csproj -c Release
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    # Build Docker image
+    - name: Build Docker Image
+      run: |
+        docker build -t maria2-download-manager .
+        docker run --rm maria2-download-manager dotnet test
+
+  release-drafter:
+    name: Draft Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+    - uses: release-drafter/release-drafter@v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notification:
+    name: Slack Notification
+    needs: [build-and-test, security-scan, performance-benchmark]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Slack Workflow Status
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+# Conditional deployment would be added here for production environments

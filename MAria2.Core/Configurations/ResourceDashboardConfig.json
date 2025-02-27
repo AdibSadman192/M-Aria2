@@ -1,0 +1,66 @@
+{
+  "dashboardSettings": {
+    "updateInterval": 5000,
+    "historicalDataRetention": {
+      "timeSpan": "24:00:00",
+      "maxEntries": 1440
+    },
+    "alertConfiguration": {
+      "enableAlerts": true,
+      "alertChannels": [
+        {
+          "type": "desktop_notification",
+          "severityThreshold": "High"
+        },
+        {
+          "type": "in_app_notification",
+          "severityThreshold": "Medium"
+        }
+      ]
+    }
+  },
+  "visualizationSettings": {
+    "colorScheme": {
+      "cpuUtilization": {
+        "low": "#4CAF50",
+        "medium": "#FFC107",
+        "high": "#F44336"
+      },
+      "memoryUtilization": {
+        "low": "#4CAF50", 
+        "medium": "#FFC107",
+        "high": "#F44336"
+      },
+      "networkUtilization": {
+        "low": "#4CAF50",
+        "medium": "#FFC107", 
+        "high": "#F44336"
+      }
+    },
+    "chartSettings": {
+      "type": "line",
+      "animationDuration": 300,
+      "responsiveResize": true,
+      "showTooltips": true
+    }
+  },
+  "performanceThresholds": {
+    "cpu": {
+      "warningThreshold": 70,
+      "criticalThreshold": 90
+    },
+    "memory": {
+      "warningThreshold": 75,
+      "criticalThreshold": 90
+    },
+    "network": {
+      "warningThreshold": 70,
+      "criticalThreshold": 90
+    }
+  },
+  "forecastSettings": {
+    "enablePrediction": true,
+    "predictionHorizon": "01:00:00",
+    "predictionGranularity": "5m"
+  }
+}

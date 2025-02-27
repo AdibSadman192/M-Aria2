@@ -1,0 +1,37 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:MAria2.Presentation.WinUI.Converters">
+
+    <!-- Converters -->
+    <converters:BytesToHumanReadableConverter x:Key="BytesToHumanReadableConverter"/>
+    <converters:SpeedToHumanReadableConverter x:Key="SpeedToHumanReadableConverter"/>
+    <converters:DownloadStatusToActionConverter x:Key="DownloadStatusToActionConverter"/>
+
+    <!-- Global Styles -->
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource AccentButtonBackground}"/>
+        <Setter Property="Foreground" Value="{ThemeResource AccentButtonForeground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AccentButtonBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="16,8"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="DownloadProgressBarStyle" TargetType="ProgressBar">
+        <Setter Property="Height" Value="8"/>
+        <Setter Property="Background" Value="{ThemeResource SystemControlBackgroundBaseLowBrush}"/>
+        <Setter Property="Foreground" Value="{ThemeResource SystemAccentColor}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <Style x:Key="DownloadListItemStyle" TargetType="Grid">
+        <Setter Property="Background" Value="{ThemeResource SystemControlBackgroundAltMediumLowBrush}"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource SystemControlForegroundBaseLowBrush}"/>
+    </Style>
+</ResourceDictionary>

@@ -1,0 +1,47 @@
+{
+  "performanceTracking": {
+    "enabled": true,
+    "metricRetentionPeriod": {
+      "downloads": 30,
+      "systemResources": 24
+    },
+    "samplingInterval": {
+      "downloads": 5,
+      "systemResources": 300
+    }
+  },
+  "optimizationThresholds": {
+    "cpu": {
+      "warning": 70,
+      "critical": 90
+    },
+    "memory": {
+      "warning": 75,
+      "critical": 90
+    },
+    "downloads": {
+      "minSuccessRate": 0.8,
+      "maxAverageDownloadTime": 600
+    }
+  },
+  "performanceAlertChannels": [
+    "console",
+    "file",
+    "email",
+    "slack"
+  ],
+  "recommendationPriorities": {
+    "low": {
+      "minPriorityLevel": 1,
+      "description": "Suggested improvements with minimal impact"
+    },
+    "medium": {
+      "minPriorityLevel": 2,
+      "description": "Recommended optimizations for noticeable performance gains"
+    },
+    "high": {
+      "minPriorityLevel": 3,
+      "description": "Critical performance improvements required"
+    }
+  }
+}

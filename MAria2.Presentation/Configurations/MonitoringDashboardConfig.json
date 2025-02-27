@@ -1,0 +1,128 @@
+{
+  "dashboardName": "MAria2 Universal Download Manager",
+  "sections": [
+    {
+      "name": "Download Performance",
+      "metrics": [
+        {
+          "id": "total_downloads",
+          "name": "Total Downloads",
+          "type": "counter",
+          "description": "Total number of downloads initiated"
+        },
+        {
+          "id": "download_speed",
+          "name": "Average Download Speed",
+          "type": "gauge",
+          "unit": "Mbps",
+          "description": "Current average download speed across all active downloads"
+        },
+        {
+          "id": "concurrent_downloads",
+          "name": "Concurrent Downloads",
+          "type": "gauge",
+          "description": "Number of downloads currently in progress"
+        }
+      ]
+    },
+    {
+      "name": "Engine Performance",
+      "metrics": [
+        {
+          "id": "engine_success_rate",
+          "name": "Download Success Rate",
+          "type": "percentage",
+          "description": "Percentage of successful downloads per engine"
+        },
+        {
+          "id": "engine_switch_count",
+          "name": "Engine Switching Frequency",
+          "type": "counter",
+          "description": "Number of times download engines were switched"
+        }
+      ]
+    },
+    {
+      "name": "System Resources",
+      "metrics": [
+        {
+          "id": "cpu_usage",
+          "name": "CPU Usage",
+          "type": "percentage",
+          "description": "Percentage of CPU utilized by MAria2"
+        },
+        {
+          "id": "memory_usage",
+          "name": "Memory Consumption",
+          "type": "percentage",
+          "description": "Percentage of memory used by the application"
+        },
+        {
+          "id": "disk_io",
+          "name": "Disk I/O",
+          "type": "gauge",
+          "unit": "MB/s",
+          "description": "Disk read/write speed during downloads"
+        }
+      ]
+    },
+    {
+      "name": "Error Tracking",
+      "metrics": [
+        {
+          "id": "download_failures",
+          "name": "Download Failures",
+          "type": "counter",
+          "description": "Total number of failed downloads"
+        },
+        {
+          "id": "error_categories",
+          "name": "Error Categories",
+          "type": "breakdown",
+          "categories": [
+            "Network Error",
+            "Authentication Failure",
+            "Insufficient Permissions",
+            "Timeout",
+            "Unknown"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Channel Subscriptions",
+      "metrics": [
+        {
+          "id": "active_subscriptions",
+          "name": "Active Subscriptions",
+          "type": "gauge",
+          "description": "Number of currently active channel subscriptions"
+        },
+        {
+          "id": "content_sync_frequency",
+          "name": "Content Sync Frequency",
+          "type": "counter",
+          "description": "Number of successful channel content synchronizations"
+        }
+      ]
+    }
+  ],
+  "alertThresholds": {
+    "download_speed": {
+      "warning": 5,
+      "critical": 1
+    },
+    "cpu_usage": {
+      "warning": 70,
+      "critical": 90
+    },
+    "memory_usage": {
+      "warning": 75,
+      "critical": 90
+    },
+    "download_failures": {
+      "warning": 10,
+      "critical": 25
+    }
+  }
+}

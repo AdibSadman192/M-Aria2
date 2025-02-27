@@ -1,0 +1,30 @@
+[
+  {
+    "Name": "Aria2",
+    "RelativePath": "aria2/aria2c.exe",
+    "ExpectedHash": null,
+    "SupportedArchitectures": ["X64"],
+    "RequiredRuntimeVersion": "6.0.0"
+  },
+  {
+    "Name": "YtDlp",
+    "RelativePath": "yt-dlp/yt-dlp.exe", 
+    "ExpectedHash": null,
+    "SupportedArchitectures": ["X64"],
+    "RequiredRuntimeVersion": "6.0.0"
+  },
+  {
+    "Name": "Wget",
+    "RelativePath": "wget/wget.exe",
+    "ExpectedHash": null, 
+    "SupportedArchitectures": ["X64"],
+    "RequiredRuntimeVersion": "6.0.0"
+  },
+  {
+    "Name": "LibCurl",
+    "RelativePath": "libcurl/libcurl.dll",
+    "ExpectedHash": null,
+    "SupportedArchitectures": ["X64"],
+    "RequiredRuntimeVersion": "6.0.0"
+  }
+]

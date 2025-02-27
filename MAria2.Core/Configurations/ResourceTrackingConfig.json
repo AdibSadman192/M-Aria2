@@ -1,0 +1,61 @@
+{
+  "resourceThresholds": {
+    "cpu": {
+      "maxUtilization": 80.0,
+      "alertSeverity": "High",
+      "cooldownPeriod": 300
+    },
+    "memory": {
+      "maxUtilization": 85.0,
+      "alertSeverity": "High",
+      "cooldownPeriod": 300
+    },
+    "network": {
+      "maxUtilization": 90.0,
+      "alertSeverity": "Medium",
+      "cooldownPeriod": 180
+    },
+    "disk": {
+      "maxUtilization": 90.0,
+      "alertSeverity": "Medium", 
+      "cooldownPeriod": 180
+    }
+  },
+  "loggingConfiguration": {
+    "enableResourceLogging": true,
+    "logRetentionPeriod": "30.00:00:00",
+    "maxLogEntries": 10000,
+    "logStoragePath": ".maria2/resource_logs"
+  },
+  "alertConfiguration": {
+    "enableAlerts": true,
+    "alertChannels": [
+      {
+        "type": "console",
+        "minSeverity": "High"
+      },
+      {
+        "type": "file",
+        "path": ".maria2/alerts/resource_alerts.log",
+        "minSeverity": "Medium"
+      },
+      {
+        "type": "windows_notification",
+        "minSeverity": "Critical"
+      }
+    ]
+  },
+  "performanceOptimization": {
+    "dynamicThrottling": {
+      "enabled": true,
+      "cpuThreshold": 70.0,
+      "memoryThreshold": 80.0,
+      "networkThreshold": 85.0
+    },
+    "backgroundProcessing": {
+      "enabled": true,
+      "lowPriorityThreshold": 50.0,
+      "highPriorityThreshold": 75.0
+    }
+  }
+}
