@@ -1,4 +1,4 @@
-# MAria2 Universal Download Manager
+# M-Aria2 Universal Download Manager
 
 ## Overview
 MAria2 is an advanced, multi-engine download management application designed with flexibility, performance, and intelligent routing as core principles.
